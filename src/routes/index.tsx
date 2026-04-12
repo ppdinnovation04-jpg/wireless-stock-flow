@@ -1,7 +1,10 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Package } from "lucide-react";
 
 export const Route = createFileRoute("/")({
-  component: Index,
+  component: IndexPage,
   head: () => ({
     meta: [
       { title: "SmartStock — Warehouse Inventory Management" },
@@ -12,38 +15,31 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-function Index() {
-  // Redirect to dashboard or login
-  if (typeof window !== "undefined") {
-    // Client-side check
-    return <IndexRedirect />;
-  }
-  return null;
-}
-
-function IndexRedirect() {
+function IndexPage() {
   const navigate = Route.useNavigate();
-  const { useEffect, useState } = require("react");
-  // We can't use hooks conditionally, so let's redirect via effect in the component
-  return <ClientRedirect />;
-}
+  const [checking, setChecking] = useState(true);
 
-function ClientRedirect() {
-  const navigate = Route.useNavigate();
-  
-  import("@/integrations/supabase/client").then(({ supabase }) => {
+  useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         navigate({ to: "/dashboard" });
       } else {
         navigate({ to: "/login" });
       }
+      setChecking(false);
     });
-  });
+  }, [navigate]);
+
+  if (!checking) return null;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      <div className="flex flex-col items-center gap-3">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
+          <Package className="h-6 w-6 text-primary-foreground" />
+        </div>
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
     </div>
   );
 }
