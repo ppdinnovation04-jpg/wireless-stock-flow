@@ -97,13 +97,14 @@ export function useInventory() {
       }
     }
 
-    await supabase.from("activity_logs").insert({
+    const updateLog: TablesInsert<"activity_logs"> = {
       user_id: user.id,
       action: "updated",
       item_id: data.id,
       item_name: data.name,
-      details: changes,
-    });
+      details: changes as unknown as Json,
+    };
+    await supabase.from("activity_logs").insert(updateLog);
 
     return data;
   }, [items]);
@@ -115,13 +116,14 @@ export function useInventory() {
     const item = items.find((i) => i.id === id);
     if (!item) throw new Error("Item not found");
 
-    await supabase.from("activity_logs").insert({
+    const deleteLog: TablesInsert<"activity_logs"> = {
       user_id: user.id,
       action: "deleted",
       item_id: null,
       item_name: item.name,
-      details: { sku: item.sku, quantity: item.quantity },
-    });
+      details: { sku: item.sku, quantity: item.quantity } as unknown as Json,
+    };
+    await supabase.from("activity_logs").insert(deleteLog);
 
     const { error } = await supabase.from("inventory_items").delete().eq("id", id);
     if (error) throw error;
