@@ -63,13 +63,14 @@ export function useInventory() {
       .single();
     if (error) throw error;
 
-    await supabase.from("activity_logs").insert({
+    const logEntry: TablesInsert<"activity_logs"> = {
       user_id: user.id,
       action: "created",
       item_id: data.id,
       item_name: data.name,
-      details: { quantity: data.quantity, sku: data.sku },
-    });
+      details: { quantity: data.quantity, sku: data.sku } as unknown as Json,
+    };
+    await supabase.from("activity_logs").insert(logEntry);
 
     return data;
   }, []);
