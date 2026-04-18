@@ -1,0 +1,1 @@
+CREATE POLICY "Anyone can view inventory for QR scan" ON public.inventory_items FOR SELECT TO anon USING (true);
