@@ -31,6 +31,7 @@ function IndexPage() {
   }, [navigate]);
 
   if (!checking) return null;
+  // (kept for safety — render spinner while checking)
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
