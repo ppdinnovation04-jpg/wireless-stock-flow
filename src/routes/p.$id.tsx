@@ -135,6 +135,7 @@ function ProductInfoPage() {
           <p className="mt-6 text-center text-xs text-muted-foreground">
             Last updated {new Date(item.updated_at).toLocaleString()}
           </p>
+          </div>
         </div>
       </div>
     </div>
