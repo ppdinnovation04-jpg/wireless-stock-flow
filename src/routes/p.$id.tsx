@@ -94,7 +94,13 @@ function ProductInfoPage() {
           <ArrowLeft className="h-4 w-4" /> Back
         </Link>
 
-        <div className="mt-4 rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+          {item.image_url && (
+            <div className="aspect-video w-full overflow-hidden bg-muted">
+              <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" />
+            </div>
+          )}
+          <div className="p-6">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h1 className="text-xl font-bold tracking-tight text-foreground">{item.name}</h1>
