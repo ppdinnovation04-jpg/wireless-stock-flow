@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,6 +8,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Upload, X, ImageIcon } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 
 type InventoryItem = Tables<"inventory_items">;
@@ -21,6 +24,8 @@ interface Props {
 
 export function InventoryDialog({ open, onOpenChange, item, onSave }: Props) {
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     name: "",
     sku: "",
@@ -29,6 +34,7 @@ export function InventoryDialog({ open, onOpenChange, item, onSave }: Props) {
     min_quantity: 5,
     category: "",
     unit: "pcs",
+    image_url: "" as string | null,
   });
 
   useEffect(() => {
@@ -41,6 +47,7 @@ export function InventoryDialog({ open, onOpenChange, item, onSave }: Props) {
         min_quantity: item.min_quantity,
         category: item.category ?? "",
         unit: item.unit,
+        image_url: item.image_url ?? "",
       });
     } else {
       setForm({
@@ -51,6 +58,7 @@ export function InventoryDialog({ open, onOpenChange, item, onSave }: Props) {
         min_quantity: 5,
         category: "",
         unit: "pcs",
+        image_url: "",
       });
     }
   }, [item, open]);
@@ -59,23 +67,93 @@ export function InventoryDialog({ open, onOpenChange, item, onSave }: Props) {
     e.preventDefault();
     setLoading(true);
     try {
-      await onSave(form);
+      await onSave({ ...form, image_url: form.image_url || null });
     } finally {
       setLoading(false);
     }
   };
 
-  const updateField = (field: string, value: string | number) => {
+  const updateField = (field: string, value: string | number | null) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB");
+      return;
+    }
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("product-images")
+        .upload(path, file, { contentType: file.type });
+      if (error) throw error;
+      const { data } = supabase.storage.from("product-images").getPublicUrl(path);
+      updateField("image_url", data.publicUrl);
+      toast.success("Image uploaded");
+    } catch (err: any) {
+      toast.error(err.message || "Upload failed");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{item ? "Edit Item" : "Add New Item"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Image upload */}
+          <div className="space-y-1.5">
+            <Label>Product Image</Label>
+            <div className="flex items-center gap-3">
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-muted">
+                {form.image_url ? (
+                  <img src={form.image_url} alt="Product" className="h-full w-full object-cover" />
+                ) : (
+                  <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  <Upload className="mr-1.5 h-3.5 w-3.5" />
+                  {uploading ? "Uploading..." : form.image_url ? "Replace" : "Upload"}
+                </Button>
+                {form.image_url && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => updateField("image_url", "")}
+                  >
+                    <X className="mr-1.5 h-3.5 w-3.5" />
+                    Remove
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="name">Name *</Label>
@@ -156,7 +234,7 @@ export function InventoryDialog({ open, onOpenChange, item, onSave }: Props) {
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading || uploading}>
               {loading ? "Saving..." : item ? "Update" : "Add Item"}
             </Button>
           </div>
