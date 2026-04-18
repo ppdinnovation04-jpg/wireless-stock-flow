@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Search, Plus, Pencil, Trash2, PackageOpen, Filter } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, PackageOpen, QrCode } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { InventoryDialog } from "@/components/InventoryDialog";
+import { QRCodeDialog } from "@/components/QRCodeDialog";
 import { toast } from "sonner";
 
 type InventoryItem = Tables<"inventory_items">;
@@ -29,6 +30,7 @@ export function InventoryTable({ items, loading, isAdmin, onAdd, onUpdate, onDel
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<InventoryItem | null>(null);
+  const [qrItem, setQrItem] = useState<InventoryItem | null>(null);
 
   const filtered = items.filter((item) => {
     const matchesSearch =
@@ -178,6 +180,13 @@ export function InventoryTable({ items, loading, isAdmin, onAdd, onUpdate, onDel
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
                         <button
+                          onClick={() => setQrItem(item)}
+                          className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                          title="View QR code"
+                        >
+                          <QrCode className="h-3.5 w-3.5" />
+                        </button>
+                        <button
                           onClick={() => {
                             setEditItem(item);
                             setDialogOpen(true);
@@ -211,6 +220,12 @@ export function InventoryTable({ items, loading, isAdmin, onAdd, onUpdate, onDel
         onOpenChange={setDialogOpen}
         item={editItem}
         onSave={handleSave}
+      />
+
+      <QRCodeDialog
+        open={!!qrItem}
+        onOpenChange={(o) => !o && setQrItem(null)}
+        item={qrItem}
       />
     </div>
   );
