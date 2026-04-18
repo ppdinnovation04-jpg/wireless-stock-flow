@@ -30,13 +30,26 @@ export function QRCodeDialog({ open, onOpenChange, item }: Props) {
     : "";
 
   useEffect(() => {
-    if (!open || !item || !canvasRef.current) return;
-    QRCode.toCanvas(canvasRef.current, productUrl, {
-      width: 280,
-      margin: 2,
-      color: { dark: "#0f172a", light: "#ffffff" },
-    }).catch(() => toast.error("Failed to generate QR code"));
-    QRCode.toDataURL(productUrl, { width: 600, margin: 2 }).then(setDataUrl);
+    if (!open || !item) return;
+    let cancelled = false;
+    // Defer to next tick so the canvas inside DialogContent is mounted
+    const timer = setTimeout(() => {
+      if (cancelled) return;
+      if (canvasRef.current) {
+        QRCode.toCanvas(canvasRef.current, productUrl, {
+          width: 280,
+          margin: 2,
+          color: { dark: "#0f172a", light: "#ffffff" },
+        }).catch(() => toast.error("Failed to generate QR code"));
+      }
+      QRCode.toDataURL(productUrl, { width: 600, margin: 2 })
+        .then((url) => !cancelled && setDataUrl(url))
+        .catch(() => toast.error("Failed to generate QR code"));
+    }, 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [open, item, productUrl]);
 
   const handleDownload = () => {
