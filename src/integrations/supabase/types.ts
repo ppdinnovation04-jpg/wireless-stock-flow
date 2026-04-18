@@ -59,6 +59,7 @@ export type Database = {
           created_by: string
           description: string | null
           id: string
+          image_url: string | null
           min_quantity: number
           name: string
           quantity: number
@@ -73,6 +74,7 @@ export type Database = {
           created_by: string
           description?: string | null
           id?: string
+          image_url?: string | null
           min_quantity?: number
           name: string
           quantity?: number
@@ -87,6 +89,7 @@ export type Database = {
           created_by?: string
           description?: string | null
           id?: string
+          image_url?: string | null
           min_quantity?: number
           name?: string
           quantity?: number
