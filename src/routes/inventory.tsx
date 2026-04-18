@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { useInventory } from "@/hooks/use-inventory";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -15,15 +15,19 @@ export const Route = createFileRoute("/inventory")({
 });
 
 function InventoryPage() {
-  const { user, role, signOut } = useAuth();
+  const { user, role, loading: authLoading, signOut } = useAuth();
   const { items, loading, addItem, updateItem, deleteItem } = useInventory();
 
-  if (!user) {
+  if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" />;
   }
 
   const userName = user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
